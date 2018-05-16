@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="feeds.js"></script>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Roboto google font CDN -->
+
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i" rel="stylesheet">
+    <!-- font awesome font -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" />
+
+</head>
+
+<body>
+
+
+    <!-- ccontainer -->
+    <div class="container">
+        <div class="feedWrap">
+
+            <div class="filterSec">
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" id="likesFilter" value="10" onchange="performeFilter(this)"> Show user those have more than 10 likes
+                    </label>
+                </div>
+
+                <div style="width: 100%;clear: both; margin: 5px 0"></div>
+
+                <div class="checkbox">
+                    <label>
+                        <!-- show 10 result per page -->
+                        <input name="showResult" type="radio" value="10"> 10 result
+                    </label>
+                    <label>
+                        <!-- show 25 result per page -->
+                        <input name="showResult" type="radio" value="25"> 25 result
+                    </label>
+                    <label>
+                        <!-- show 50 result per page -->
+                        <input name="showResult" type="radio" value="50" onchange=""> 50 result
+                    </label>
+                </div>
+
+            </div>
+            <div id="feeds_content">
+
+
+
+            </div>
+
+            <div class="basDePage">
+
+                <!-- go to the first result  -->
+
+                <button id="prev">
+                    <span class="fa fa-chevron-up"></span>
+                </button>
+                <!-- go to the nxt  result  -->
+                <button id="next">Show more result </button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <script>
+
+        var feeds = JSON.parse(data) // parse JSON file
+
+        var content = document.getElementById("feeds_content") // div où on remplit les elements 
+
+        var feeds_Total_Likes = getUsers(feeds) // User Total likes  pour chaque utilisateur 
+
+        var nbrPage = 1 // nobre de page par default 
+
+        var defaultFeed = 10 // nobre de resultat  affichée dans une page 
+
+        var __feeds = userFilter(feeds) // tableau des objet video filtré par utilisateur 
+
+        displayFeed(defaultFeed, feeds) // afficher les donnée pour la première fois 
+
+        var showResult = Array.prototype.slice.call(document.getElementsByName("showResult")) // button radio pour afficher les resultat  en nombre de page
+
+        var likesFilter = document.getElementById("likesFilter") // checkbox input p
+
+        var sections = Array.prototype.slice.call(document.getElementsByClassName("sectionPage"))
+        console.log(sections) // pages affichées dans le UI 
+
+
+
+        // 1 _  implementation des fonctions pour afficher les resultats divisées par pages 
+        showResult.forEach(e => {
+
+            e.onchange = function () {
+
+                var n = parseInt(this.value)
+
+                var feedPerSection
+
+                if (likesFilter.checked == true) {
+                    feedPerSection = __feeds
+                } else {
+                    feedPerSection = feeds
+                }
+
+                displayFeed(n, feedPerSection)
+                defaultFeed = n
+                var len = feedPerSection.length
+                nbrPage = ((len % n) == 0) ? len / n : Math.floor((len / n)) + 1;
+
+                for (var i = 1; i < nbrPage; i++) {
+                    document.getElementById('section_id' + i).style.display = "none"
+                }
+
+                if (nbrPage == 5) { nextResult.style.display = "block" }
+                else {
+                    nextResult.style.display = "block"
+                }
+            }
+        }) // 1_end !
+
+
+
+
+        var nextResult = document.getElementById("next") //Boutton pour resultat suivant 
+
+        var prevResult = document.getElementById("prev")//Boutton pour atteindre la première resulat
+
+        prevResult.style.display = "none"
+
+        // Traitement Atteindre la première resulat
+        prevResult.onclick = function () {
+            document.getElementById('section_id' + 0).style.display = "block"
+            nextResult.style.display = "block"
+
+        }
+        // Traitement Atteindre les resulats suivants resulat
+        var pageIndex = 0
+        nextResult.onclick = function () {
+
+            if (nbrPage > 1) {
+
+                prevResult.style.display = "block"
+
+                document.getElementById('section_id' + pageIndex).style.display = "none"
+
+                pageIndex++
+
+                if (pageIndex == nbrPage) { pageIndex = nbrPage - 1; nextResult.style.display = "none" }
+
+                document.getElementById('section_id' + pageIndex).style.display = "block"
+            }
+        }
+
+
+
+
+        // traitement pour filter les resulatt selon le nombre de likes 
+        function performeFilter(input) {
+
+            if (input.checked) {
+                displayFeed(defaultFeed, __feeds)
+            } else {
+                displayFeed(defaultFeed, feeds)
+            }
+        }
+        // """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+        // """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+        // """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
+        // affichage de resultat 
+        function displayFeed(n, obj) {
+
+            var len = obj.length
+
+            var nbr_page = ((len % n) == 0) ? len / n : Math.floor((len / n)) + 1;
+
+            content.innerHTML = ""
+
+            var pos = 0
+            var depart = 0
+            var arrivee = 0
+
+            while (pos < nbr_page) {
+
+                var page = document.createElement("section")
+                page.setAttribute("id", "section_id" + pos)
+                page.setAttribute("class", "sectionPage")
+
+                for (var i = depart; i < arrivee + n; i++) {
+
+                    if (i == len) break
+
+
+                    var div = document.createElement("div")
+                    div.setAttribute("class", "feed");
+
+                    div.innerHTML = '<div class=avatar><a href="'
+                        + obj[i].user.link
+                        + '"><img src="'
+                        + obj[i].user.pictures.sizes[1].link
+                        + '"></div><div class=video_details><a href=' + obj[i].link
+                        + ' target=_blank class=videoTitle>' +
+                        obj[i].name
+                        + '</a><p class=desc>' + obj[i].description
+                        + '</p><div class=feedFooter><span class=nbrplyes><i class=" fa fa-heart"></i>'
+                        + obj[i].metadata.connections.likes.total + '</span><span class=comments><i class=" fa fa-comment"></i> '
+                        + obj[i].metadata.connections.comments.total
+                        + '</span></div></div>'
+
+                    page.appendChild(div)
+
+
+
+
+                }
+
+                arrivee += n
+
+                depart = arrivee
+
+                content.appendChild(page)
+
+                pos++
+            }
+
+
+        }
+
+        // affichage de resultat  end 
+
+
+
+
+
+
+
+        // Selectionner les utulisateurs triés par leurs nombre de likes superieur ou egale à 10 
+
+        function getUsers(obj) {
+
+            let len = obj.length
+            let users = []
+            let _obj = {}
+
+
+
+            for (var i = 0; i < len; i++) {
+                obj[i]["allLikes"] = getLikes(obj[i].user.name, obj)
+                if (getLikes(obj[i].user.name, obj) >= 10) {
+                    _obj[obj[i]['user']['name']] = obj[i];
+                }
+            }
+
+            for (var key in _obj)
+                users.push(_obj[key]);
+
+            return users
+
+
+        }
+
+        // end ! 
+
+
+
+
+        // fonction qui permet de calculter les nombre de likes 
+
+        function getLikes(user, obj) {
+
+            var len = obj.length
+            var all_likes = 0
+
+            for (var i = 0; i < len; i++) {
+                if (obj[i].user.name.indexOf(user) !== -1) {
+                    all_likes += obj[i].user.metadata.connections.likes.total
+                }
+            }
+            return all_likes
+        }
+
+
+
+
+
+        // display user whose have more than 10 Likes
+
+        function userFilter(obj) {
+
+            var len = feeds_Total_Likes.length
+
+            var newFeed = []
+
+            for (var i = 0; i < len; i++) {
+
+                obj.filter(f => {
+
+
+                    if (f.user.name.indexOf(feeds_Total_Likes[i].user.name) !== -1) {
+                        newFeed.push(f);
+                    }
+
+
+                })
+            }
+
+            return newFeed
+
+        }
+
+
+
+
+    </script>
+
+
+
+</body>
+
+</html>
